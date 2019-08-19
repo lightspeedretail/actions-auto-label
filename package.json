@@ -1,0 +1,26 @@
+{
+  "name": "auto-label-action",
+  "author": "Lightspeed HQ",
+  "version": "0.0.0",
+  "private": true,
+  "description": "Add labels to PR based on matched file patterns",
+  "main": "lib/entrypoint.js",
+  "scripts": {
+    "build": "tsc"
+  },
+  "repository": {
+    "type": "git",
+    "url": "git+https://github.com/actions/node12-template.git"
+  },
+  "license": "MIT",
+  "dependencies": {
+    "actions-toolkit": "^1.4.1",
+    "ignore": "^5.0.5",
+    "lodash": "^4.17.11"
+  },
+  "devDependencies": {
+    "@types/node": "^12.0.4",
+    "@types/semver": "^6.0.0",
+    "typescript": "^3.5.1"
+  }
+}
