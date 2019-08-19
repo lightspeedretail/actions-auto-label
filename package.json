@@ -6,7 +6,9 @@
   "description": "Add labels to PR based on matched file patterns",
   "main": "lib/entrypoint.js",
   "scripts": {
-    "build": "tsc"
+    "test": "echo lol",
+    "build": "tsc",
+    "release": "./release.sh"
   },
   "repository": {
     "type": "git",
