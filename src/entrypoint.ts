@@ -1,7 +1,6 @@
 import * as core from '@actions/core';
 import * as github from '@actions/github';
 import fs from 'fs';
-import path from 'path';
 import ignore from 'ignore';
 
 async function run() {
@@ -11,8 +10,7 @@ async function run() {
     const octokit = new github.GitHub(token);
 
     // Load config
-    const configPath = path.resolve(__dirname, '../../../auto-label.json');
-    const configContents = fs.readFileSync(configPath, 'utf-8');
+    const configContents = fs.readFileSync('./.github/auto-label.json', 'utf-8');
     const config = JSON.parse(configContents);
     core.info(`Found config: ${JSON.stringify(config, null, 2)}`);
 
