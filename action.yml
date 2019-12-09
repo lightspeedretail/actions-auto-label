@@ -3,4 +3,4 @@ description: 'Add labels to PR based on matched file patterns'
 author: 'Lightspeed HQ'
 runs:
   using: 'node12'
-  main: 'lib/entrypoint.js'
+  main: 'dist/entrypoint.js'

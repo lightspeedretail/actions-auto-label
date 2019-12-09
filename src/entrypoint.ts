@@ -1,115 +1,58 @@
-import * as fs from 'fs';
-import * as path from 'path';
-import { Toolkit } from 'actions-toolkit';
-import { addLabelsToLabelable, removeLabelsFromLabelable, getPullRequestAndLabels } from './query';
-import { Label, FileEdge, LabelEdge, LabelName } from './interface';
-import { getLabelIds } from './util';
-import * as util from 'util';
+import * as core from '@actions/core';
+import * as github from '@actions/github';
+import fs from 'fs';
+import path from 'path';
 import ignore from 'ignore';
 
-const exec = util.promisify(require('child_process').exec);
-const configFile = '.github/auto-label.json';
-const tools = new Toolkit({
-  event: ['pull_request.opened', 'pull_request.synchronize'],
-});
-
-(async () => {
-  if (!fs.existsSync(path.join(tools.workspace, configFile))) {
-    tools.exit.neutral('config file does not exist.');
-  }
-
-  const config = JSON.parse(tools.getFile(configFile));
-
-  let result;
-
+async function run() {
   try {
-    result = await getPullRequestAndLabels(tools, tools.context.issue());
+    core.info(`✏️ Auto labelling PR`);
+    const token = process.env.GITHUB_TOKEN!;
+    const octokit = new github.GitHub(token);
+
+    // Load config
+    const configPath = path.resolve(__dirname, '../../../auto-label.json');
+    const configContents = fs.readFileSync(configPath, 'utf-8');
+    const config = JSON.parse(configContents);
+    core.info(`Found config: ${JSON.stringify(config, null, 2)}`);
+
+    // Get manual labels
+    const labelsRes = await octokit.issues.listLabelsOnIssue({
+      ...github.context.repo,
+      issue_number: github.context.payload!.pull_request!.number,
+    });
+    const allLabels = labelsRes.data.map(({ name }) => name);
+    const autoLabels = Object.keys(config.rules);
+    const manualLabels = allLabels.filter(label => !autoLabels.includes(label));
+    core.info(`Manually set labels: [${manualLabels.join(',')}]`);
+
+    // Get files changed on PR
+    const filesRes = await octokit.pulls.listFiles({
+      ...github.context.repo,
+      pull_number: github.context.payload!.pull_request!.number,
+    });
+    const filenames = filesRes.data.map(file => file.filename);
+    core.info(`Files changed: [${filenames.join(',')}]`);
+
+    // Determine labels for PR
+    const rules = Object.entries(config.rules);
+    const appliedRules = rules.filter(([, pattern]) => {
+      const rule = ignore().add(pattern as any);
+      return filenames.some(fn => rule.ignores(fn));
+    });
+    const newAutoLabels = appliedRules.map(([label]) => label);
+    const newLabels = [...manualLabels, ...newAutoLabels];
+    core.info(`New labels: [${newLabels.join(',')}]`);
+
+    // Replace labels on PR
+    await octokit.issues.replaceLabels({
+      ...github.context.repo,
+      issue_number: github.context.payload!.pull_request!.number,
+      labels: newLabels,
+    });
   } catch (error) {
-    console.error('Request failed: ', error.request, error.message);
-    tools.exit.failure('getPullRequestAndLabels has been failed.');
+    core.setFailed(error.message);
   }
+}
 
-  console.log('Result: ', result);
-
-  const allLabels = result.repository.labels.edges.reduce((acc: Label, edge: LabelEdge) => {
-    acc[edge.node.name] = edge.node.id;
-    return acc;
-  }, {});
-
-  const currentLabelNames = new Set(
-    result.repository.pullRequest.labels.edges.map((edge: LabelEdge) => edge.node.name),
-  );
-
-  const { headRefOid, baseRefOid } = result.repository.pullRequest;
-
-  // TODO: handle stderr
-  const { stdout, stderr } = await exec(
-    `git merge-base --is-ancestor ${baseRefOid} ${headRefOid} && git diff --name-only ${baseRefOid} || git diff --name-only $(git merge-base ${baseRefOid} ${headRefOid})`,
-  );
-
-  const diffFiles = stdout.trim().split('\n');
-
-  const newLabelNames = new Set(
-    diffFiles.reduce((acc: LabelName[], file: string) => {
-      Object.entries(config.rules).forEach(([label, pattern]) => {
-        if (
-          ignore()
-            .add(pattern as any)
-            .ignores(file)
-        ) {
-          acc.push(label);
-        }
-      });
-      return acc;
-    }, []),
-  );
-
-  const ruledLabelNames = new Set(Object.keys(config.rules));
-
-  const labelNamesToAdd = new Set(
-    ([...newLabelNames] as LabelName[]).filter(labelName => !currentLabelNames.has(labelName)),
-  );
-
-  const labelNamesToRemove = new Set(
-    ([...currentLabelNames] as LabelName[]).filter(
-      (labelName: string) => !newLabelNames.has(labelName) && ruledLabelNames.has(labelName),
-    ),
-  );
-
-  console.log(' ---> Current status');
-  console.log('allLabels: ', allLabels);
-  console.log('currentLabelNames: ', currentLabelNames);
-  console.log('diffFiles: ', diffFiles);
-  console.log('newLabelNames: ', newLabelNames);
-  console.log('ruledLabelNames: ', ruledLabelNames);
-  console.log('labelNamesToAdd: ', labelNamesToAdd);
-  console.log('labelNamesToRemove: ', labelNamesToRemove);
-
-  const labelableId = result.repository.pullRequest.id;
-
-  if (labelNamesToAdd.size > 0) {
-    try {
-      await addLabelsToLabelable(tools, {
-        labelIds: getLabelIds(allLabels, [...labelNamesToAdd] as LabelName[]),
-        labelableId,
-      });
-      console.log('Added labels: ', labelNamesToAdd);
-    } catch (error) {
-      console.error('Request failed: ', error.request, error.message);
-      tools.exit.failure('addLabelsToLabelable has been failed. ');
-    }
-  }
-
-  if (labelNamesToRemove.size > 0) {
-    try {
-      await removeLabelsFromLabelable(tools, {
-        labelIds: getLabelIds(allLabels, [...labelNamesToRemove] as LabelName[]),
-        labelableId,
-      });
-      console.log('Removed labels: ', labelNamesToRemove);
-    } catch (error) {
-      console.error('Request failed: ', error.request, error.message);
-      tools.exit.failure('removeLabelsFromLabelable has been failed. ');
-    }
-  }
-})();
+run();

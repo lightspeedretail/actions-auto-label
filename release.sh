@@ -11,15 +11,15 @@ if [ "$git_branch" == "master" ]; then
 fi
 
 # Install dependencies and build & test.
-npm install
-npm test
-npm run build
+yarn
+yarn test
+yarn build
 
 # Build & tests successful. Now keep only production deps.
-npm prune --production
+yarn --production
 
 # Force add built files and deps.
-git add --force lib/ node_modules/
+git add --force dist/ node_modules/
 git commit -a -m "Publishing $git_branch"
 git push -u origin $git_branch
 

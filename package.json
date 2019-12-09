@@ -1,10 +1,10 @@
 {
-  "name": "auto-label-action",
+  "name": "auto-label-pr",
   "author": "Lightspeed HQ",
-  "version": "0.0.0",
+  "version": "2.0.0",
   "private": true,
-  "description": "Add labels to PR based on matched file patterns",
-  "main": "lib/entrypoint.js",
+  "description": "Auto label pull requests",
+  "main": "dist/entrypoint.js",
   "scripts": {
     "test": "echo lol",
     "build": "tsc",
@@ -16,13 +16,13 @@
   },
   "license": "MIT",
   "dependencies": {
-    "actions-toolkit": "^1.4.1",
-    "ignore": "^5.0.5",
-    "lodash": "^4.17.11"
+    "@actions/core": "^1.2.0",
+    "@actions/github": "^1.1.0",
+    "@actions/io": "^1.0.1",
+    "ignore": "^5.1.4"
   },
   "devDependencies": {
-    "@types/node": "^12.0.4",
-    "@types/semver": "^6.0.0",
-    "typescript": "^3.5.1"
+    "@types/node": "^12.12.15",
+    "typescript": "^3.6.2"
   }
 }
