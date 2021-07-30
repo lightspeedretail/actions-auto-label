@@ -85,10 +85,10 @@
   dependencies:
     "@types/node" ">= 8"
 
-"@types/node@>= 8", "@types/node@^12.12.15":
-  version "12.12.15"
-  resolved "https://registry.yarnpkg.com/@types/node/-/node-12.12.15.tgz#8dfb6ce22fedd469128137640a3aa8f17415422f"
-  integrity sha512-Pv+vWicyFd07Hw/SmNnTUguqrHgDfMtjabvD9sQyxeqbpCEg8CmViLBaVPHtNsoBgZECrRf5/pgV6FJIBrGSjw==
+"@types/node@>= 8", "@types/node@^16.4.7":
+  version "16.4.7"
+  resolved "https://registry.yarnpkg.com/@types/node/-/node-16.4.7.tgz#f7afa78769d4b477f5092d7c3468e2e8653d779c"
+  integrity sha512-aDDY54sst8sx47CWT6QQqIZp45yURq4dic0+HCYfYNcY5Ejlb/CLmFnRLfy3wQuYafOeh3lB/DAKaqRKBtcZmA==
 
 atob-lite@^2.0.0:
   version "2.0.0"
